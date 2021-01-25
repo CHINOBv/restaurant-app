@@ -40,7 +40,7 @@ const NewDish = () => {
     }),
     onSubmit: (dish) => {
       try {
-        dish.ecxistance = true;
+        dish.existance = true;
         dish.image = imgUri;
         firebase.db.collection("products").add(dish);
         navigate.push("/menu");
@@ -95,6 +95,7 @@ const NewDish = () => {
                 value={formik.values.name}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
+                autoFocus
               />
             </div>
             {formik.touched.name && formik.errors.name ? (
