@@ -1,7 +1,15 @@
+import { useContext } from "react";
+
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
+import { FirebaseContext } from "../firebase";
+
 const NewDish = () => {
+  const { firebase } = useContext(FirebaseContext);
+
+  console.log(firebase);
+
   const formik = useFormik({
     initialValues: {
       name: "",
