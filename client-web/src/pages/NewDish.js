@@ -1,14 +1,21 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
+import { useHistory } from "react-router-dom";
 
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
 import { FirebaseContext } from "../firebase";
 
+import FileUploader from "react-firebase-file-uploader";
+
 const NewDish = () => {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [imgUri, setImgUri] = useState("");
+
   const { firebase } = useContext(FirebaseContext);
 
-  console.log(firebase);
+  const navigate = useHistory();
 
   const formik = useFormik({
     initialValues: {
@@ -26,13 +33,46 @@ const NewDish = () => {
         .min(1, "The price is too short")
         .required("Price Is Required"),
       category: Yup.string().required("Category Is Required"),
-      image: Yup.string().required("Image Is Required"),
+      image: Yup.string(),
       description: Yup.string()
         .min(10, "The description is too short")
         .required("Description Is Required"),
     }),
-    onSubmit: (data) => console.log(data),
+    onSubmit: (dish) => {
+      try {
+        dish.ecxistance = true;
+        dish.image = imgUri;
+        firebase.db.collection("products").add(dish);
+        navigate.push("/menu");
+      } catch (error) {
+        console.log(error);
+      }
+    },
   });
+
+  const handleUploadStart = () => {
+    setProgress(0);
+    setUploading(true);
+  };
+
+  const handleUploadError = (error) => {
+    setUploading(false);
+    console.log(error);
+  };
+
+  const handleUploadSuccess = async (name) => {
+    setProgress(100);
+    setUploading(false);
+    const url = await firebase.storage
+      .ref("products")
+      .child(name)
+      .getDownloadURL();
+    setImgUri(url);
+  };
+
+  const handleUploadProgress = (progressUpload) => {
+    setProgress(progressUpload);
+  };
 
   return (
     <>
@@ -133,23 +173,32 @@ const NewDish = () => {
               >
                 Image
               </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-none"
-                type="file"
+              <FileUploader
+                accept="image/*"
                 id="image"
-                value={formik.values.image}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
+                randomizeFilename
+                name="image"
+                storageRef={firebase.storage.ref("products")}
+                onUploadStart={handleUploadStart}
+                onUploadError={handleUploadError}
+                onUploadSuccess={handleUploadSuccess}
+                onProgress={handleUploadProgress}
               />
             </div>
-            {formik.touched.image && formik.errors.image ? (
-              <div
-                className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"
-                role="alert"
-              >
-                <p className="font-bold">Error: </p>
-                <p>{formik.errors.image}</p>
+            {uploading ? (
+              <div className="h-12 relative w-full border">
+                <div
+                  className="bg-green-500 absolute left-0 top-0 text-white px-2 text-sm h-12 flex items-center"
+                  style={{ width: `${progress}%` }}
+                >
+                  {progress} %
+                </div>
               </div>
+            ) : null}
+            {imgUri ? (
+              <p className="font-bold text-center bg-green-500 text-white p-3 my-5">
+                Image Is Uploaded
+              </p>
             ) : null}
             <div className="mb-4">
               <label
@@ -166,21 +215,21 @@ const NewDish = () => {
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
               ></textarea>
-              <input
-                type="submit"
-                value="Add New Dish"
-                className="bg-gray-800 hover:bg-gray-900 w-full mt-5 p-2 text-white uppercase font-bold "
-              />
+              {formik.touched.description && formik.errors.description ? (
+                <div
+                  className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"
+                  role="alert"
+                >
+                  <p className="font-bold">Error: </p>
+                  <p>{formik.errors.description}</p>
+                </div>
+              ) : null}
             </div>
-            {formik.touched.description && formik.errors.description ? (
-              <div
-                className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"
-                role="alert"
-              >
-                <p className="font-bold">Error: </p>
-                <p>{formik.errors.description}</p>
-              </div>
-            ) : null}
+            <input
+              type="submit"
+              value="Add New Dish"
+              className="bg-gray-800 hover:bg-gray-900 w-full mt-5 p-2 text-white uppercase font-bold "
+            />
           </form>
         </div>
       </div>
