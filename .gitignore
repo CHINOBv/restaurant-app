@@ -22,4 +22,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-client-web/src/firebase/config.js
+client/src/firebase/config.js
+app/firebase/config.js
